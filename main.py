@@ -22,9 +22,15 @@ class TrainRequest(BaseModel):
     content: str  
     is_fake: bool  
 
+class TrainResponse(BaseModel):
+    message: str
+
 class FeedbackRequest(BaseModel):
     text: str
     is_fake: bool
+
+class FeedbackResponse(BaseModel):
+    message: str
 
 def preprocess(text):
     text = text.lower()  # Convert to lowercase
@@ -37,7 +43,6 @@ def preprocess(text):
 async def detect_news(request: DetectRequest):
     try:
         input_data = vectorizer.transform([preprocess(request.text)])
-
         prediction = model.predict(input_data)
         probabilities = model.predict_proba(input_data)
 
@@ -52,7 +57,7 @@ async def detect_news(request: DetectRequest):
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"An error occurred: {str(e)}")
 
-@app.post("/train")
+@app.post("/train", response_model=TrainResponse)
 async def train_model(request: TrainRequest):
     try:
         title = preprocess(request.title)
@@ -70,12 +75,12 @@ async def train_model(request: TrainRequest):
 
         joblib.dump(model, 'fake_news_detector.pkl')
 
-        return {"message": "Model successfully updated with the new data."}
+        return TrainResponse(message="Model successfully updated with the new data.")
     
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"An error occurred: {str(e)}")
 
-@app.post("/feedback")
+@app.post("/feedback", response_model=FeedbackResponse)
 async def submit_feedback(request: FeedbackRequest):
     try:
         feedback_text = preprocess(request.text)
@@ -90,7 +95,7 @@ async def submit_feedback(request: FeedbackRequest):
 
         joblib.dump(model, 'fake_news_detector.pkl')
 
-        return {"message": "Feedback successfully submitted and model updated."}
+        return FeedbackResponse(message="Feedback successfully submitted and model updated.")
     
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"An error occurred: {str(e)}")
